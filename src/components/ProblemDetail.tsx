@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, updateProblem } from '../db';
-import { exportLuoguZip } from '../luogu';
+import { exportLuoguZip, exportTestCasesOnlyZip } from '../luogu';
 import { validateProblem, downloadBlob, type ValidationItem, type ProblemType } from '../utils';
 import { useTheme } from '../useTheme';
 import TestCaseUploader from './TestCaseUploader';
@@ -34,6 +34,7 @@ export default function ProblemDetail({ problemId, onBack }: Props) {
 
   const [tab, setTab] = useState<Tab>('testcases');
   const [exporting, setExporting] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [showConfPreview, setShowConfPreview] = useState(false);
   const [statementView, setStatementView] = useState<'edit' | 'preview'>('edit');
   const { theme, toggle } = useTheme();
@@ -58,11 +59,18 @@ export default function ProblemDetail({ problemId, onBack }: Props) {
     ? validateProblem(problem, subtasks, testCases)
     : [];
 
-  const handleExport = async () => {
-    if (!problem || !subtasks || !testCases) return;
+  const handleExport = async (mode: 'full' | 'testcases') => {
+    if (!problem || !testCases) return;
     setExporting(true);
+    setExportMenuOpen(false);
     try {
-      const blob = await exportLuoguZip(problem, subtasks, testCases);
+      let blob: Blob;
+      if (mode === 'testcases') {
+        blob = await exportTestCasesOnlyZip(problem, testCases);
+      } else {
+        if (!subtasks) return;
+        blob = await exportLuoguZip(problem, subtasks, testCases);
+      }
       downloadBlob(blob, `${problem.slug}-${problem.title}.zip`);
     } finally {
       setExporting(false);
@@ -124,13 +132,38 @@ export default function ProblemDetail({ problemId, onBack }: Props) {
           >
             {showConfPreview ? '隐藏配置' : '预览配置'}
           </button>
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="px-4 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-xs font-medium hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 shadow-sm hover:shadow transition"
-          >
-            {exporting ? '导出中...' : '📤 导出 ZIP'}
-          </button>
+          {/* 导出下拉菜单 */}
+          <div className="relative">
+            <button
+              onClick={() => setExportMenuOpen(!exportMenuOpen)}
+              disabled={exporting}
+              className="px-4 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-xs font-medium hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 shadow-sm hover:shadow transition flex items-center gap-1"
+            >
+              {exporting ? '导出中...' : '📤 导出'}
+              <span className={`text-[10px] transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+            {exportMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setExportMenuOpen(false)} />
+                <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1.5 z-40">
+                  <button
+                    onClick={() => handleExport('full')}
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md flex flex-col gap-0.5"
+                  >
+                    <span className="font-medium text-gray-800 dark:text-gray-200">📦 完整 ZIP</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">含 problem.conf + config.yml + data</span>
+                  </button>
+                  <button
+                    onClick={() => handleExport('testcases')}
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md flex flex-col gap-0.5"
+                  >
+                    <span className="font-medium text-gray-800 dark:text-gray-200">📁 仅测试点</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">只含 data/，洛谷手动配置</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 

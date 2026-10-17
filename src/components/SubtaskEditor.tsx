@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, addSubtask, updateSubtask, deleteSubtask } from '../db';
+import { db, addSubtask, updateSubtask, deleteSubtask, updateTestCase } from '../db';
 
 interface Props {
   problemId: string;
@@ -17,6 +17,30 @@ export default function SubtaskEditor({ problemId }: Props) {
 
   const totalScore = subtasks?.reduce((sum, s) => sum + s.score, 0) ?? 0;
 
+  const autoDistributeScores = async () => {
+    if (!subtasks || subtasks.length === 0) return;
+    const count = subtasks.length;
+    const per = Math.floor(100 / count);
+    const remainder = 100 - per * count;
+    const sorted = [...subtasks].sort((a, b) => a.index - b.index);
+    for (let i = 0; i < sorted.length; i++) {
+      const score = i === 0 ? per + remainder : per;
+      await updateSubtask(sorted[i].id, { score });
+    }
+  };
+
+  const autoAssignTestCases = async () => {
+    if (!subtasks || !testCases || subtasks.length === 0 || testCases.length === 0) return;
+    const sortedSubs = [...subtasks].sort((a, b) => a.index - b.index);
+    for (const tc of testCases) {
+      const subIndex = (tc.number - 1) % sortedSubs.length;
+      const targetSubId = sortedSubs[subIndex].id;
+      if (!tc.subtaskIds.includes(targetSubId)) {
+        await updateTestCase(tc.id, { subtaskIds: [targetSubId] });
+      }
+    }
+  };
+
   const toggleDepend = async (subtaskId: string, depIndex: number) => {
     const sub = await db.subtasks.get(subtaskId);
     if (!sub) return;
@@ -30,16 +54,33 @@ export default function SubtaskEditor({ problemId }: Props) {
     <div>
       {/* 总分显示 */}
       {subtasks && subtasks.length > 0 && (
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
           <span className="text-xs text-gray-500 dark:text-gray-400">
             总分: <span className={`font-bold ${totalScore === 100 ? 'text-green-600' : 'text-red-600'}`}>{totalScore}</span> / 100
           </span>
-          <button
-            onClick={() => addSubtask(problemId)}
-            className="text-xs px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-200 font-medium"
-          >
-            + Subtask
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={autoAssignTestCases}
+              disabled={!testCases || testCases.length === 0}
+              className="text-xs px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 rounded font-medium border border-indigo-200 dark:border-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="将测试点按顺序均匀分配到各 Subtask"
+            >
+              ⚡ 自动分配测试点
+            </button>
+            <button
+              onClick={autoDistributeScores}
+              className="text-xs px-3 py-1 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-600 dark:text-amber-300 rounded font-medium border border-amber-200 dark:border-amber-700"
+              title="将 100 分均匀分配给各 Subtask"
+            >
+              🔄 平均分配分值
+            </button>
+            <button
+              onClick={() => addSubtask(problemId)}
+              className="text-xs px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-200 font-medium"
+            >
+              + Subtask
+            </button>
+          </div>
         </div>
       )}
 

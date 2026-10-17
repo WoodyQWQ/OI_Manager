@@ -37,15 +37,32 @@ function persist(t: Theme) {
 
 export function applyTheme(t: Theme) {
   if (t === currentTheme) return;
+  // 切换前记录滚动位置，避免浅/深色模式内容高度差导致页面跳动
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
   currentTheme = t;
   snapshot = { theme: t }; // 重建快照（新引用）
   writeDom(t);
   persist(t);
+  // 下一帧恢复滚动位置（在 writeDom 造成的 DOM 重排之后）
+  requestAnimationFrame(() => {
+    window.scrollTo(scrollX, scrollY);
+  });
   listeners.forEach(fn => fn());
 }
 
 export function toggleTheme() {
-  applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
+  const next = currentTheme === 'dark' ? 'light' : 'dark';
+  currentTheme = next;
+  snapshot = { theme: next };
+  writeDom(next);
+  persist(next);
+  requestAnimationFrame(() => {
+    window.scrollTo(scrollX, scrollY);
+  });
+  listeners.forEach(fn => fn());
 }
 
 // 初始化

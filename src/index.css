@@ -60,3 +60,65 @@ html { transition: background-color 0.2s ease; }
   background: #60a5fa;
   color: #0b1120;
 }
+
+.dark .katex {
+  color: #fff;
+}
+
+.dark .katex .mfrac .frac-line,
+.dark .katex .overline .overline-line,
+.dark .katex .underline .underline-line,
+.dark .katex .sqrt .sqrt-line,
+.dark .katex .rule {
+  border-color: #fff;
+  background-color: #fff;
+}
+
+.dark .katex svg {
+  stroke: #fff;
+}
+
+.dark .katex svg path,
+.dark .katex svg line,
+.dark .katex svg polyline,
+.dark .katex svg rect {
+  stroke: #fff;
+  fill: #fff;
+}
+
+.dark .katex .delimsizing {
+  color: #fff;
+}
+
+.dark .katex .accent-body > span {
+  color: #fff;
+}
+
+.dark .katex [style*="opacity: 0"],
+.dark .katex [style*="opacity:0"] {
+  opacity: 0 !important;
+  color: transparent !important;
+}
+
+.dark .katex .mord .vlist-t,
+.dark .katex .mbin .vlist-t,
+.dark .katex .mrel .vlist-t,
+.dark .katex .mop .vlist-t,
+.dark .katex .mopen .vlist-t,
+.dark .katex .mclose .vlist-t,
+.dark .katex .mpunct .vlist-t,
+.dark .katex .minner .vlist-t {
+  color: #fff;
+}
+
+.dark .katex-display,
+.dark .katex-display > .katex {
+  color: #fff;
+}
+
+.markdown-body .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  padding: 0.5rem 0;
+}

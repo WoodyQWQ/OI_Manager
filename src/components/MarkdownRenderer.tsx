@@ -1,7 +1,9 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback, createContext, useContext } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+
+const InCodeBlockContext = createContext(false);
 
 interface Props {
   content: string;
@@ -80,29 +82,52 @@ export default function MarkdownRenderer({ content, className = '' }: Props) {
           ul: ({ children }) => <ul className="list-disc pl-7 my-3 space-y-1 text-gray-700 dark:text-gray-300">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal pl-7 my-3 space-y-1 text-gray-700 dark:text-gray-300">{children}</ol>,
           li: ({ children }) => <li>{children}</li>,
-          code: ({ node, inline, className: cls, children }: any) => {
-            const isInline = inline === true;
-            if (isInline) {
+          pre: ({ children }: any) => {
+            let codeText = '';
+            React.Children.forEach(children, (child) => {
+              if (React.isValidElement(child)) {
+                const childChildren = (child.props as any).children;
+                if (typeof childChildren === 'string') {
+                  codeText += childChildren;
+                } else if (Array.isArray(childChildren)) {
+                  codeText += childChildren.map((c: any) => (typeof c === 'string' ? c : '')).join('');
+                } else if (childChildren !== undefined && childChildren !== null) {
+                  codeText += String(childChildren);
+                }
+              }
+            });
+            return (
+              <InCodeBlockContext.Provider value={true}>
+                <div className="group/code relative w-full my-4">
+                  <pre className="w-full p-4 pr-16 rounded-xl bg-gray-50 dark:bg-slate-900 overflow-x-auto shadow-inner border border-gray-200 dark:border-gray-700/60">
+                    {children}
+                  </pre>
+                  <div className="absolute top-3 right-3">
+                    <CopyButton text={codeText} />
+                  </div>
+                </div>
+              </InCodeBlockContext.Provider>
+            );
+          },
+          code: ({ className: cls, children }: any) => {
+            const inBlock = useContext(InCodeBlockContext);
+            if (inBlock) {
               return (
                 <code
-                  className={`inline-block max-w-full mx-0.5 px-1.5 py-0.5 rounded-md text-[13px] font-mono bg-gray-100 dark:bg-gray-700/80 text-rose-600 dark:text-rose-300 border border-gray-200 dark:border-gray-600/50 ${cls || ''}`}
+                  className={`block text-[13px] font-mono text-gray-800 dark:text-gray-100 leading-6 ${cls || ''}`}
                 >
                   {children}
                 </code>
               );
             }
             return (
-              <div className="group/code relative w-full my-4">
-                <pre className="w-full p-4 pr-16 rounded-xl bg-gray-50 dark:bg-slate-900 overflow-x-auto shadow-inner border border-gray-200 dark:border-gray-700/60">
-                  <code className={`block text-[13px] font-mono text-gray-800 dark:text-gray-100 leading-6 ${cls || ''}`}>{children}</code>
-                </pre>
-                <div className="absolute top-3 right-3">
-                  <CopyButton text={String(children)} />
-                </div>
-              </div>
+              <code
+                className={`inline mx-0.5 px-1.5 py-0.5 rounded text-[13px] font-mono bg-gray-100 dark:bg-gray-700/80 text-rose-600 dark:text-rose-300 border border-gray-200 dark:border-gray-600/50 ${cls || ''}`}
+              >
+                {children}
+              </code>
             );
           },
-          pre: ({ children }) => <>{children}</>,
           blockquote: ({ children }) => (
             <blockquote className="my-4 pl-5 border-l-4 border-indigo-400 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-900/20 py-2 pr-4 rounded-r-lg text-gray-700 dark:text-gray-300">
               {children}

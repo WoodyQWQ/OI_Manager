@@ -170,3 +170,28 @@ export async function exportLuoguZip(
 
   return zip.generateAsync({ type: 'blob' });
 }
+
+/** 仅导出测试点数据 ZIP（不含 problem.conf / config.yml，用于洛谷手动配置） */
+export async function exportTestCasesOnlyZip(
+  problem: Problem,
+  testCases: TestCase[],
+): Promise<Blob> {
+  const JSZip = (await import('jszip')).default;
+  const zip = new JSZip();
+
+  const dirName = `${problem.slug}-${problem.title}`.replace(/[^\w\-]/g, '_');
+  const root = zip.folder(dirName)!;
+  const dataDir = root.folder('data')!;
+
+  const sorted = [...testCases].sort((a, b) => a.number - b.number);
+  for (const tc of sorted) {
+    if (tc.inputContent) {
+      dataDir.file(`${tc.number}.in`, tc.inputContent);
+    }
+    if (tc.outputContent) {
+      dataDir.file(`${tc.number}.out`, tc.outputContent);
+    }
+  }
+
+  return zip.generateAsync({ type: 'blob' });
+}
