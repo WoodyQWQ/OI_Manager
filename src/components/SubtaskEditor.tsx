@@ -85,10 +85,14 @@ export default function SubtaskEditor({ problemId }: Props) {
       )}
 
       <div className="space-y-3">
-        {subtasks?.map(sub => {
+        {subtasks?.map((sub, i) => {
           const subCases = testCases?.filter(tc => tc.subtaskIds.includes(sub.id)) ?? [];
           return (
-            <div key={sub.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div
+              key={sub.id}
+              style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+              className="anim-fade-up bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 transition-colors hover:border-gray-300 dark:hover:border-gray-600"
+            >
               <div className="flex items-center gap-3 mb-3">
                 <span className="w-7 h-7 flex items-center justify-center bg-purple-100 dark:bg-black text-purple-700 dark:text-purple-100 border border-purple-200 dark:border-gray-700 rounded text-xs font-bold">
                   {sub.index}
@@ -159,7 +163,7 @@ export default function SubtaskEditor({ problemId }: Props) {
         {subtasks && subtasks.length === 0 && (
           <button
             onClick={() => addSubtask(problemId)}
-            className="w-full py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-400 dark:text-gray-500 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition"
+            className="anim-fade-up w-full py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-400 dark:text-gray-500 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition"
           >
             + 添加第一个 Subtask
           </button>

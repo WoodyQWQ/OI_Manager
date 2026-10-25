@@ -64,10 +64,12 @@ export default function ProblemList({ onOpen }: { onOpen: (id: string) => void }
         <div className="flex items-center gap-2">
           <button
             onClick={toggle}
-            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            className="group/theme p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
             title="切换主题"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            <span className="inline-block transition-transform duration-300 group-hover/theme:rotate-[22deg] group-hover/theme:scale-110">
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </span>
           </button>
           <button
             onClick={() => setShowImport(true)}
@@ -77,7 +79,7 @@ export default function ProblemList({ onOpen }: { onOpen: (id: string) => void }
           </button>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition text-xs font-medium shadow-sm hover:shadow"
+            className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition text-xs font-medium shadow-sm hover:shadow active:scale-[0.97]"
           >
             + 新建题目
           </button>
@@ -87,7 +89,7 @@ export default function ProblemList({ onOpen }: { onOpen: (id: string) => void }
       <main className="max-w-5xl mx-auto px-6 py-8">
         {/* 新建表单 */}
         {showForm && (
-          <div className="mb-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm transition-colors">
+          <div className="anim-fade-down mb-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm transition-colors">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">新建题目</h2>
             <div className="flex gap-3">
               <input
@@ -106,7 +108,7 @@ export default function ProblemList({ onOpen }: { onOpen: (id: string) => void }
               />
               <button
                 onClick={handleCreate}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition shadow-sm"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition shadow-sm active:scale-[0.97]"
               >
                 创建
               </button>
@@ -116,16 +118,31 @@ export default function ProblemList({ onOpen }: { onOpen: (id: string) => void }
 
         {/* 题目列表 */}
         {problems === undefined ? (
-          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-20">加载中...</p>
+          <div className="space-y-2.5">
+            {[0, 1, 2, 3].map(i => (
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 p-5"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="skeleton h-7 w-16 rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <div className="skeleton h-4 w-1/3 rounded" />
+                    <div className="skeleton h-3 w-2/5 rounded" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : problems.length === 0 ? (
-          <div className="text-center py-24 text-gray-400 dark:text-gray-500">
+          <div className="anim-fade-up text-center py-24 text-gray-400 dark:text-gray-500">
             <p className="text-5xl mb-4">📋</p>
             <p className="text-sm">还没有题目</p>
             <p className="text-xs mt-1 text-gray-400">点击右上角「新建题目」或「导入题目」开始</p>
           </div>
         ) : (
           <div className="space-y-2.5">
-            {problems.map(p => {
+            {problems.map((p, i) => {
               const sourceLabel = p.source && p.source !== 'OI_Manager'
                 ? `出处：${p.source}`
                 : '于 OI_Manager 建立';
@@ -133,7 +150,8 @@ export default function ProblemList({ onOpen }: { onOpen: (id: string) => void }
               return (
                 <div
                   key={p.id}
-                  className="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 p-5 flex items-center justify-between hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-md hover:shadow-blue-100/50 dark:hover:shadow-blue-900/10 transition-all duration-200 cursor-pointer group"
+                  style={{ animationDelay: `${Math.min(i, 8) * 35}ms` }}
+                  className="anim-fade-up relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700/60 p-5 flex items-center justify-between hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-100/60 dark:hover:shadow-blue-900/10 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
                   onClick={() => onOpen(p.id)}
                 >
                   {/* 悬停出处提示 */}
@@ -166,11 +184,11 @@ export default function ProblemList({ onOpen }: { onOpen: (id: string) => void }
                     </span>
                     <button
                       onClick={e => { e.stopPropagation(); handleDelete(p.id); }}
-                      className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-all"
+                      className="opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 text-red-400 hover:text-red-600 text-xs transition-all duration-200"
                     >
                       删除
                     </button>
-                    <span className="text-gray-300 dark:text-gray-600 group-hover:text-blue-500 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all duration-200">→</span>
+                    <span className="text-gray-300 dark:text-gray-600 group-hover:text-blue-500 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all duration-200">→</span>
                   </div>
                 </div>
               );

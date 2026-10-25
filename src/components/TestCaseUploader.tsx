@@ -14,6 +14,12 @@ interface Props {
 /** 编辑模式 */
 type EditorMode = 'cards' | 'editor' | 'diff';
 
+const EDITOR_MODES: [EditorMode, string][] = [
+  ['cards', '📋 卡片视图'],
+  ['editor', '✏️ 编辑器'],
+  ['diff', '🔀 对比'],
+];
+
 export default function TestCaseUploader({ problemId, subtasks, problemType }: Props) {
   const testCases = useLiveQuery(
     () => db.testCases.where('problemId').equals(problemId).sortBy('number'),
@@ -113,17 +119,20 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
     <div className="space-y-4">
       {/* 工具栏 */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 p-3">
-        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 text-xs font-medium">
-          {([
-            ['cards', '📋 卡片视图'],
-            ['editor', '✏️ 编辑器'],
-            ['diff', '🔀 对比'],
-          ] as [EditorMode, string][]).map(([k, label]) => (
+        <div className="segmented grid-cols-3 text-xs font-medium">
+          <span
+            className="segmented-pill"
+            style={{
+              width: `calc((100% - 0.5rem) / ${EDITOR_MODES.length})`,
+              transform: `translateX(${EDITOR_MODES.findIndex(([k]) => k === editorMode) * 100}%)`,
+            }}
+          />
+          {EDITOR_MODES.map(([k, label]) => (
             <button
               key={k}
               onClick={() => setEditorMode(k)}
-              className={`px-3 py-1.5 rounded-md transition ${
-                editorMode === k ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              className={`relative z-10 px-3 py-1.5 rounded-md transition-colors duration-200 ${
+                editorMode === k ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               {label}
@@ -133,13 +142,13 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowQuickAdd(s => !s)}
-            className="px-3 py-1.5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-md font-medium border border-purple-200 dark:border-purple-700"
+            className="px-3 py-1.5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-md font-medium border border-purple-200 dark:border-purple-700 transition-transform active:scale-[0.97]"
           >
             + 快速添加
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="px-3 py-1.5 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md font-medium border border-blue-200 dark:border-blue-700"
+            className="px-3 py-1.5 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md font-medium border border-blue-200 dark:border-blue-700 transition-transform active:scale-[0.97]"
           >
             📁 选择文件
           </button>
@@ -163,11 +172,11 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-xl py-6 text-center cursor-pointer transition-all ${
             dragging
-              ? 'border-blue-400 bg-blue-50 scale-[1.005]'
+              ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 scale-[1.005] anim-ring'
               : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 bg-white dark:bg-gray-900'
           }`}
         >
-          <div className="text-3xl mb-1">{dragging ? '📥' : '☁️'}</div>
+          <div className={`text-3xl mb-1 ${dragging ? 'anim-bounce' : ''}`}>{dragging ? '📥' : '☁️'}</div>
           <p className="text-sm text-gray-600 font-medium">
             {dragging ? '释放以上传文件' : '拖拽 .in / .out 文件到此处，或点击选择'}
           </p>
@@ -179,7 +188,7 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
 
       {/* 快速添加面板 */}
       {showQuickAdd && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-200 dark:border-purple-700 shadow-sm overflow-hidden">
+        <div className="anim-fade-down bg-white dark:bg-gray-800 rounded-xl border border-purple-200 dark:border-purple-700 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/20 border-b border-purple-100 dark:border-purple-800">
             <h3 className="text-sm font-semibold text-purple-700">✨ 快速添加测试点</h3>
             <button onClick={() => setShowQuickAdd(false)} className="text-purple-400 hover:text-purple-600 text-sm">
@@ -240,7 +249,7 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
 
       {/* === 编辑器模式 === */}
       {editorMode === 'editor' && activeTc && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="anim-fade-up bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
               <span className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-black text-blue-700 dark:text-blue-100 border border-blue-200 dark:border-gray-700 font-bold flex items-center justify-center text-sm">
@@ -316,7 +325,7 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
 
       {/* === Diff 对比模式 === */}
       {editorMode === 'diff' && (
-        <div className="space-y-3">
+        <div className="anim-fade-up space-y-3">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">🔀 文件对比工具</h3>
@@ -401,13 +410,14 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
           )}
 
           <div className={editorMode === 'cards' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3' : 'space-y-2'}>
-            {testCases?.map(tc => {
+            {testCases?.map((tc, i) => {
               const stColor = getStatusColor(tc);
               if (editorMode === 'cards') {
                 return (
                   <div
                     key={tc.id}
-                    className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition p-3 cursor-pointer"
+                    style={{ animationDelay: `${Math.min(i, 11) * 30}ms` }}
+                    className="anim-fade-up group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-3 cursor-pointer"
                     onClick={() => { setActiveId(tc.id); setEditorMode('editor'); }}
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -461,7 +471,8 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
                 <div
                   key={tc.id}
                   onClick={() => setActiveId(tc.id)}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition ${
+                  style={{ animationDelay: `${Math.min(i, 11) * 30}ms` }}
+                  className={`anim-fade-up flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition ${
                     activeId === tc.id
                       ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600 shadow-sm'
                       : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-600'
@@ -523,7 +534,7 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
           </div>
 
           {testCases && testCases.length === 0 && (
-            <div className="text-center py-14 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200">
+            <div className="anim-fade-up text-center py-14 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
               <p className="text-4xl mb-2">📦</p>
               <p className="text-sm text-gray-400 dark:text-gray-500">还没有测试点，拖拽文件或点击「快速添加」开始</p>
             </div>

@@ -33,9 +33,9 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className={`shrink-0 px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1 ${
+      className={`shrink-0 px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-200 flex items-center gap-1 active:scale-95 ${
         copied
-          ? 'bg-emerald-500 text-white'
+          ? 'anim-pop bg-emerald-500 text-white'
           : 'bg-gray-100 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600/40'
       }`}
       title="复制代码"

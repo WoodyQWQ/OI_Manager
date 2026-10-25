@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, updateProblem } from '../db';
 import { exportLuoguZip, exportTestCasesOnlyZip } from '../luogu';
@@ -38,6 +38,30 @@ export default function ProblemDetail({ problemId, onBack }: Props) {
   const [showConfPreview, setShowConfPreview] = useState(false);
   const [statementView, setStatementView] = useState<'edit' | 'preview'>('edit');
   const { theme, toggle } = useTheme();
+
+  // Tab 滑动指示条：随选中项移动，用 ResizeObserver 跟随徽标宽度变化
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const order: Tab[] = ['testcases', 'subtasks', 'statement', 'validate'];
+    const measure = () => {
+      const el = tabRefs.current[order.indexOf(tab)];
+      if (!el) return;
+      const left = el.offsetLeft;
+      const width = el.offsetWidth;
+      setTabIndicator(prev => (prev.left === left && prev.width === width ? prev : { left, width }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    tabRefs.current.forEach(el => el && ro.observe(el));
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+    // problem 从 undefined 变为已加载时 Tab 才真正挂载，需重新测量
+  }, [tab, problem]);
 
   if (!problem) return <div className="p-8 text-gray-400">加载中...</div>;
 
@@ -121,10 +145,12 @@ export default function ProblemDetail({ problemId, onBack }: Props) {
         <div className="flex items-center gap-1.5">
           <button
             onClick={toggle}
-            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            className="group/theme p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
             title="切换主题"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            <span className="inline-block transition-transform duration-300 group-hover/theme:rotate-[22deg] group-hover/theme:scale-110">
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </span>
           </button>
           <button
             onClick={() => setShowConfPreview(!showConfPreview)}
@@ -137,15 +163,15 @@ export default function ProblemDetail({ problemId, onBack }: Props) {
             <button
               onClick={() => setExportMenuOpen(!exportMenuOpen)}
               disabled={exporting}
-              className="px-4 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-xs font-medium hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 shadow-sm hover:shadow transition flex items-center gap-1"
+              className="px-4 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-xs font-medium hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 shadow-sm hover:shadow transition flex items-center gap-1 active:scale-[0.97]"
             >
               {exporting ? '导出中...' : '📤 导出'}
-              <span className={`text-[10px] transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`}>▼</span>
+              <span className={`text-[10px] transition-transform duration-200 ${exportMenuOpen ? 'rotate-180' : ''}`}>▼</span>
             </button>
             {exportMenuOpen && (
               <>
-                <div className="fixed inset-0 z-30" onClick={() => setExportMenuOpen(false)} />
-                <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1.5 z-40">
+                <div className="fixed inset-0 z-30 anim-fade-in" onClick={() => setExportMenuOpen(false)} />
+                <div className="anim-scale-in absolute right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1.5 z-40 origin-top-right">
                   <button
                     onClick={() => handleExport('full')}
                     className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md flex flex-col gap-0.5"
@@ -182,13 +208,13 @@ export default function ProblemDetail({ problemId, onBack }: Props) {
                   <button
                     key={opt.value}
                     onClick={() => setType(opt.value)}
-                    className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                    className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99] ${
                       active
                         ? 'border-blue-400 bg-blue-50/60 dark:bg-blue-900/20 shadow-md shadow-blue-100/50 dark:shadow-blue-900/10'
                         : 'border-gray-100 dark:border-gray-700/60 bg-gray-50/50 dark:bg-gray-900/30 hover:border-gray-200 dark:hover:border-gray-600 hover:bg-white dark:hover:bg-gray-800'
                     }`}
                   >
-                    {active && <span className="absolute top-2.5 right-2.5 w-5 h-5 bg-blue-500 text-white rounded-full text-[10px] flex items-center justify-center shadow-sm">✓</span>}
+                    {active && <span className="anim-pop absolute top-2.5 right-2.5 w-5 h-5 bg-blue-500 text-white rounded-full text-[10px] flex items-center justify-center shadow-sm">✓</span>}
                     <div className="text-xl mb-1.5">{opt.icon}</div>
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{opt.label}</div>
                     <div className="text-[12px] text-gray-500 dark:text-gray-400 mt-1">{opt.desc}</div>
@@ -277,20 +303,21 @@ export default function ProblemDetail({ problemId, onBack }: Props) {
           </div>
 
           {/* Tab 栏 */}
-          <div className="flex gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
-            {tabs.map(t => (
+          <div className="relative flex gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
+            {tabs.map((t, i) => (
               <button
                 key={t.key}
+                ref={el => { tabRefs.current[i] = el; }}
                 onClick={() => setTab(t.key)}
-                className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-all ${
+                className={`relative px-5 py-2.5 text-sm font-medium transition-colors duration-200 ${
                   tab === t.key
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 {t.label}
                 {t.badge && (
-                  <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                  <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors ${
                     t.key === 'validate' && errorCount > 0
                       ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400'
                       : 'bg-gray-100 dark:bg-gray-700/60 text-gray-500 dark:text-gray-300'
@@ -300,91 +327,105 @@ export default function ProblemDetail({ problemId, onBack }: Props) {
                 )}
               </button>
             ))}
+            {/* 滑动指示条：跟随当前 Tab 位置与宽度 */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -bottom-px h-0.5 rounded-full bg-blue-500 dark:bg-blue-400"
+              style={{
+                left: tabIndicator.left,
+                width: tabIndicator.width,
+                opacity: tabIndicator.width ? 1 : 0,
+                transition: 'left 280ms cubic-bezier(0.22, 1, 0.36, 1), width 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease',
+              }}
+            />
           </div>
 
-          {/* Tab 内容 */}
-          {tab === 'testcases' && (
-            <TestCaseUploader problemId={problemId} subtasks={subtasks ?? []} problemType={problemType} />
-          )}
+          {/* Tab 内容（按 tab 重挂载以播放入场动画） */}
+          <div key={tab} className="anim-fade-up">
+            {tab === 'testcases' && (
+              <TestCaseUploader problemId={problemId} subtasks={subtasks ?? []} problemType={problemType} />
+            )}
 
-          {tab === 'subtasks' && (
-            <SubtaskEditor problemId={problemId} />
-          )}
+            {tab === 'subtasks' && (
+              <SubtaskEditor problemId={problemId} />
+            )}
 
-          {tab === 'statement' && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-gray-400 dark:text-gray-500">使用 Markdown 编写题面，支持 LaTeX 公式（$...$ / $$...$$）、代码块、表格</p>
-                <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-md p-0.5 text-xs">
-                  <button
-                    onClick={() => setStatementView('edit')}
-                    className={`px-3 py-1 rounded ${statementView === 'edit' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}
-                  >
-                    ✏️ 编辑
-                  </button>
-                  <button
-                    onClick={() => setStatementView('preview')}
-                    className={`px-3 py-1 rounded ${statementView === 'preview' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}
-                  >
-                    👁️ 预览
-                  </button>
+            {tab === 'statement' && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">使用 Markdown 编写题面，支持 LaTeX 公式（$...$ / $$...$$）、代码块、表格</p>
+                  <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-md p-0.5 text-xs">
+                    <button
+                      onClick={() => setStatementView('edit')}
+                      className={`px-3 py-1 rounded transition-all duration-200 ${statementView === 'edit' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    >
+                      ✏️ 编辑
+                    </button>
+                    <button
+                      onClick={() => setStatementView('preview')}
+                      className={`px-3 py-1 rounded transition-all duration-200 ${statementView === 'preview' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    >
+                      👁️ 预览
+                    </button>
+                  </div>
                 </div>
-              </div>
-              {statementView === 'edit' ? (
-                <textarea
-                  value={problem.statement}
-                  onChange={e => updateProblem(problemId, { statement: e.target.value })}
-                  placeholder={`## 题目描述\n\n## 输入格式\n\n## 输出格式\n\n## 样例\n\n## 数据范围`}
-                  className="w-full h-[480px] px-4 py-3 text-sm font-mono border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y shadow-sm"
-                />
-              ) : (
-                <div className="w-full min-h-[480px] px-6 py-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm overflow-auto">
-                  <MarkdownRenderer content={problem.statement} />
-                </div>
-              )}
-            </div>
-          )}
-
-          {tab === 'validate' && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-4 mb-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors">
-                <span className={`text-sm font-bold ${
-                  errorCount > 0 ? 'text-red-600' :
-                  warnCount > 0 ? 'text-yellow-600' :
-                  'text-green-600'
-                }`}>
-                  {errorCount > 0 ? `❌ ${errorCount} 个错误` :
-                   warnCount > 0 ? `⚠️ ${warnCount} 个警告` :
-                   '✅ 全部通过'}
-                </span>
-                {subtasks && subtasks.length > 0 && (
-                  <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
-                    Subtask 总分: <span className={`font-bold ${
-                      subtasks.reduce((s, sub) => s + sub.score, 0) === 100 ? 'text-green-600' : 'text-red-600'
-                    }`}>{subtasks.reduce((s, sub) => s + sub.score, 0)}</span> / 100
-                  </span>
+                {statementView === 'edit' ? (
+                  <textarea
+                    value={problem.statement}
+                    onChange={e => updateProblem(problemId, { statement: e.target.value })}
+                    placeholder={`## 题目描述\n\n## 输入格式\n\n## 输出格式\n\n## 样例\n\n## 数据范围`}
+                    className="w-full h-[480px] px-4 py-3 text-sm font-mono border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y shadow-sm"
+                  />
+                ) : (
+                  <div className="anim-fade-in w-full min-h-[480px] px-6 py-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm overflow-auto">
+                    <MarkdownRenderer content={problem.statement} />
+                  </div>
                 )}
               </div>
-              {validationItems.map((item, i) => (
-                <div
-                  key={i}
-                  className={`flex items-start gap-2 px-4 py-2.5 rounded-xl text-sm shadow-sm border ${
-                    item.level === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-100 dark:border-red-800' :
-                    item.level === 'warning' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-100 dark:border-yellow-800' :
-                    'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-100 dark:border-green-800'
-                  }`}
-                >
-                  <span>{item.level === 'error' ? '❌' : item.level === 'warning' ? '⚠️' : '✅'}</span>
-                  <span>{item.message}</span>
+            )}
+
+            {tab === 'validate' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-4 mb-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors">
+                  <span className={`text-sm font-bold ${
+                    errorCount > 0 ? 'text-red-600' :
+                    warnCount > 0 ? 'text-yellow-600' :
+                    'text-green-600'
+                  }`}>
+                    {errorCount > 0 ? `❌ ${errorCount} 个错误` :
+                     warnCount > 0 ? `⚠️ ${warnCount} 个警告` :
+                     '✅ 全部通过'}
+                  </span>
+                  {subtasks && subtasks.length > 0 && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
+                      Subtask 总分: <span className={`font-bold ${
+                        subtasks.reduce((s, sub) => s + sub.score, 0) === 100 ? 'text-green-600' : 'text-red-600'
+                      }`}>{subtasks.reduce((s, sub) => s + sub.score, 0)}</span> / 100
+                    </span>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+                {validationItems.map((item, i) => (
+                  <div
+                    key={i}
+                    style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}
+                    className={`anim-fade-up flex items-start gap-2 px-4 py-2.5 rounded-xl text-sm shadow-sm border ${
+                      item.level === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-100 dark:border-red-800' :
+                      item.level === 'warning' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-100 dark:border-yellow-800' :
+                      'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-100 dark:border-green-800'
+                    }`}
+                  >
+                    <span>{item.level === 'error' ? '❌' : item.level === 'warning' ? '⚠️' : '✅'}</span>
+                    <span>{item.message}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </main>
 
         {/* 配置预览侧栏 */}
         {showConfPreview && (
-          <aside className="w-[32rem] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 overflow-auto transition-colors" style={{ maxHeight: 'calc(100vh - 56px)' }}>
+          <aside className="anim-slide-in-right w-[32rem] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 overflow-auto transition-colors" style={{ maxHeight: 'calc(100vh - 56px)' }}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">📄 配置文件实时预览</h3>
               <button onClick={() => setShowConfPreview(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-xs transition-colors">✕</button>

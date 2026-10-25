@@ -122,3 +122,104 @@ html { transition: background-color 0.2s ease; }
   max-width: 100%;
   padding: 0.5rem 0;
 }
+
+/* ==================== 动效系统 ==================== */
+/* 设计原则：短位移 + 快速缓动，只做「入场」不做花哨循环；统一由下面 token 驱动 */
+:root {
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
+  --dur-fade: 180ms;
+  --dur-move: 300ms;
+}
+
+@keyframes oi-fade-in { from { opacity: 0; } }
+@keyframes oi-fade-out { to { opacity: 0; } }
+@keyframes oi-fade-up { from { opacity: 0; transform: translateY(10px); } }
+@keyframes oi-fade-down { from { opacity: 0; transform: translateY(-8px); } }
+@keyframes oi-scale-in { from { opacity: 0; transform: scale(0.96) translateY(6px); } }
+@keyframes oi-modal-in { from { opacity: 0; transform: scale(0.94) translateY(18px); } }
+@keyframes oi-modal-out { to { opacity: 0; transform: scale(0.97) translateY(10px); } }
+@keyframes oi-page-in { from { opacity: 0; transform: translateY(12px); } }
+@keyframes oi-slide-in-right { from { opacity: 0; transform: translateX(28px); } }
+@keyframes oi-pop {
+  0% { transform: scale(0.82); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes oi-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes oi-shimmer {
+  from { background-position: 180% 0; }
+  to { background-position: -180% 0; }
+}
+@keyframes oi-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60% { transform: translateX(5px); }
+}
+@keyframes oi-pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.28); }
+  50% { box-shadow: 0 0 0 7px rgba(59, 130, 246, 0); }
+}
+
+/* fill-mode 统一用 backwards：动画结束后回到元素自身样式，不会残留 transform（避免破坏 sticky / fixed 布局） */
+.anim-fade-in { animation: oi-fade-in var(--dur-fade) var(--ease-soft) backwards; }
+.anim-fade-up { animation: oi-fade-up var(--dur-move) var(--ease-soft) backwards; }
+.anim-fade-down { animation: oi-fade-down 220ms var(--ease-soft) backwards; }
+.anim-scale-in { animation: oi-scale-in 200ms var(--ease-spring) backwards; }
+.anim-modal-in { animation: oi-modal-in 260ms var(--ease-spring) backwards; }
+.anim-page-in { animation: oi-page-in var(--dur-move) var(--ease-soft) backwards; }
+.anim-slide-in-right { animation: oi-slide-in-right var(--dur-move) var(--ease-soft) backwards; }
+.anim-pop { animation: oi-pop 280ms var(--ease-spring); }
+.anim-bounce { animation: oi-bounce 900ms ease-in-out infinite; }
+.anim-shake { animation: oi-shake 380ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+.anim-ring { animation: oi-pulse-ring 1.6s ease-out infinite; }
+/* 出场动画需要保留末态，单独使用 forwards */
+.anim-fade-out { animation: oi-fade-out 160ms ease-in forwards; }
+.anim-modal-out { animation: oi-modal-out 160ms ease-in forwards; }
+
+/* 骨架屏 */
+.skeleton {
+  background-color: #e5e7eb;
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.65) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: oi-shimmer 1.3s linear infinite;
+}
+.dark .skeleton {
+  background-color: #374151;
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.07) 50%, transparent 100%);
+}
+
+/* 分段控件：白色滑块随选中项滑动 */
+.segmented {
+  @apply relative grid rounded-lg bg-gray-100 dark:bg-gray-700 p-1;
+}
+.segmented-pill {
+  @apply pointer-events-none absolute bottom-1 left-1 top-1 rounded-md bg-white shadow-sm dark:bg-gray-800;
+  transition: transform 260ms var(--ease-spring);
+  will-change: transform;
+}
+
+/* 尊重系统「减少动态效果」设置 */
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-in,
+  .anim-fade-up,
+  .anim-fade-down,
+  .anim-scale-in,
+  .anim-modal-in,
+  .anim-modal-out,
+  .anim-page-in,
+  .anim-slide-in-right,
+  .anim-pop,
+  .anim-bounce,
+  .anim-shake,
+  .anim-ring,
+  .skeleton,
+  .segmented-pill {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { importFromLuogu, importFromCodeforces, importFromPaste, type OJSource, type ImportResult } from '../ojImport';
 
 interface Props {
@@ -29,8 +29,20 @@ export default function ImportModal({ open, onClose, onImport }: Props) {
   const [pasteStatement, setPasteStatement] = useState('');
   const [pasteTime, setPasteTime] = useState('1000');
   const [pasteMem, setPasteMem] = useState('256');
+  // 关闭时先播出场动画，动画结束后再真正卸载
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) setClosing(false);
+  }, [open]);
 
   if (!open) return null;
+
+  const requestClose = () => {
+    if (closing) return;
+    setClosing(true);
+    window.setTimeout(onClose, 160);
+  };
 
   const handleImport = async () => {
     setError('');
@@ -51,7 +63,7 @@ export default function ImportModal({ open, onClose, onImport }: Props) {
         });
       }
       onImport(result);
-      onClose();
+      requestClose();
     } catch (e: any) {
       setError(e.message || '导入失败，请检查网络或题号');
     } finally {
@@ -60,15 +72,18 @@ export default function ImportModal({ open, onClose, onImport }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm ${closing ? 'anim-fade-out pointer-events-none' : 'anim-fade-in'}`}
+      onClick={requestClose}
+    >
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto border border-gray-200 dark:border-gray-700"
+        className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto border border-gray-200 dark:border-gray-700 ${closing ? 'anim-modal-out' : 'anim-modal-in'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* 头部 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">📥 导入题目</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">✕</button>
+          <button onClick={requestClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl transition-transform duration-200 hover:rotate-90">✕</button>
         </div>
 
         {/* OJ 选择 Tab */}
@@ -90,6 +105,7 @@ export default function ImportModal({ open, onClose, onImport }: Props) {
 
         {/* 内容区 */}
         <div className="p-6">
+          <div key={source} className="anim-fade-up">
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
             {OJ_TABS.find(t => t.key === source)?.desc}
           </p>
@@ -195,26 +211,27 @@ export default function ImportModal({ open, onClose, onImport }: Props) {
               </label>
             </div>
           )}
+          </div>
 
           {/* 错误提示 */}
           {error && (
-            <div className="mt-4 px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
-              ❌ {error}
+            <div className="anim-fade-up mt-4 px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
+              <span className="anim-shake inline-block">❌ {error}</span>
             </div>
           )}
 
           {/* 底部按钮 */}
           <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
             <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg"
+              onClick={requestClose}
+              className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-transform active:scale-[0.97]"
             >
               取消
             </button>
             <button
               onClick={handleImport}
               disabled={loading}
-              className="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium disabled:opacity-50 flex items-center gap-2 transition-transform active:scale-[0.97]"
             >
               {loading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               {loading ? '导入中...' : '导入'}

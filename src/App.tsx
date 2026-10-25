@@ -5,8 +5,14 @@ import ProblemDetail from './components/ProblemDetail';
 export default function App() {
   const [currentProblemId, setCurrentProblemId] = useState<string | null>(null);
 
-  if (currentProblemId) {
-    return <ProblemDetail problemId={currentProblemId} onBack={() => setCurrentProblemId(null)} />;
-  }
-  return <ProblemList onOpen={setCurrentProblemId} />;
+  return (
+    // key 变化触发重挂载，让列表 ↔ 详情的切换有统一的入场过渡
+    <div key={currentProblemId ?? 'list'} className="anim-page-in">
+      {currentProblemId ? (
+        <ProblemDetail problemId={currentProblemId} onBack={() => setCurrentProblemId(null)} />
+      ) : (
+        <ProblemList onOpen={setCurrentProblemId} />
+      )}
+    </div>
+  );
 }
