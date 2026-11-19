@@ -434,7 +434,7 @@ export default function TestCaseUploader({ problemId, subtasks, problemType }: P
                         🗑
                       </button>
                     </div>
-                    <p className="text-sm font-medium text-gray-800 truncate" title={tc.note}>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white truncate" title={tc.note}>
                       {tc.note || `测试点 ${tc.number}`}
                     </p>
                     <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-400 dark:text-gray-500">
